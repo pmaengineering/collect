@@ -704,4 +704,7 @@
     <string name="security_error">Collect can\'t connect securely to the server at %s. Did you enter the URL correctly?</string>
     <string name="failure">Failure</string>
     <string name="form_update_succeeded">Form update succeeded</string>
+    <string name="reset_subform_db">Relations database reset</string>
+    <string name="reset_subform_db_confirm">Resetting the relations database is irreversible. Continue?</string>
+    <string name="reset_subform_db_result">Relations database were reset</string>
 </resources>

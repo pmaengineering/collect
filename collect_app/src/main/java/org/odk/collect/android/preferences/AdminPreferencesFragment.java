@@ -14,6 +14,7 @@
 
 package org.odk.collect.android.preferences;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -31,6 +32,7 @@ import org.odk.collect.android.fragments.dialogs.SimpleDialog;
 import org.odk.collect.android.injection.DaggerUtils;
 import org.odk.collect.android.storage.StoragePathProvider;
 import org.odk.collect.android.storage.StorageSubdirectory;
+import org.odk.collect.android.subform.SubformDatabaseKt;
 import org.odk.collect.android.utilities.DialogUtils;
 import org.odk.collect.android.utilities.MultiClickGuard;
 import org.odk.collect.android.utilities.ToastUtils;
@@ -70,6 +72,24 @@ public class AdminPreferencesFragment extends BasePreferenceFragment implements 
         findPreference("user_settings").setOnPreferenceClickListener(this);
         findPreference("form_entry").setOnPreferenceClickListener(this);
         findPreference("save_legacy_settings").setOnPreferenceClickListener(this);
+        findPreference("reset_subform_db").setOnPreferenceClickListener(preference -> resetRelationsDb());
+    }
+
+    private boolean resetRelationsDb() {
+        AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setTitle(getString(R.string.reset_subform_db))
+                .setMessage(getString(R.string.reset_subform_db_confirm))
+                .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                    SubformDatabaseKt.resetSubformDb();
+                    ToastUtils.showShortToast(getString(R.string.reset_subform_db_result));
+                })
+                .setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+                    dialogInterface.cancel();
+                })
+                .create();
+        dialog.show();
+        return true;
     }
 
     @Override

@@ -23,7 +23,7 @@ public class FormInstanceFileCreator {
     }
 
     public File createInstanceFile(String formDefinitionPath) {
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ENGLISH)
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.ENGLISH)
                 .format(new Date(clock.getCurrentTime()));
         String formFileName = formDefinitionPath.substring(formDefinitionPath.lastIndexOf('/') + 1,
                 formDefinitionPath.lastIndexOf('.'));

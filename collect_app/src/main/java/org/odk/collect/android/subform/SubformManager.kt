@@ -260,3 +260,20 @@ data class SubformActionResult(val created: Int = 0, val updated: Int = 0, val d
 }
 
 data class SubformDeleteInfo(val selfDestruct: Boolean, val deleteCount: Int)
+
+/**
+ * A class to summarize the subforms on the device
+ */
+class SubformDeviceSummary() {
+    val allRelations = getAllRelations()
+    val allParents = allRelations.map { it.first }.toSet()
+    val allChildren = allRelations.map { it.second }.toSet()
+    val parentToChildren = allRelations.groupBy({it.first}, {it.second})
+    val childToParents = allRelations.groupBy({it.second}, {it.first})
+
+    override fun toString(): String {
+        return allRelations.map {
+            StringBuilder().append(it.first).append(" -> ").append(it.second)
+        }.joinToString(prefix= "[\n", postfix = "\n]", separator = "\n")
+    }
+}

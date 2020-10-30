@@ -131,6 +131,25 @@ fun insert(parentId: String, parentNode: String, repeatableNode: String?,
         }
 
 /**
+ * Gets all relations
+ */
+fun getAllRelations(): Set<Pair<Long, Long>> =
+    with(SubformDatabaseHelper().readableDatabase) {
+        val projection = arrayOf(COLUMN_PARENT_INSTANCE_ID, COLUMN_CHILD_INSTANCE_ID)
+        val cursor = query(TABLE_NAME, projection, null, null, null, null, null)
+        val allRelations = mutableSetOf<Pair<Long, Long>>()
+        cursor?.run {
+            if (moveToFirst()) {
+                while(moveToNext()) {
+                    val thisParent = getLong(getColumnIndex(COLUMN_PARENT_INSTANCE_ID))
+                    val thisChild = getLong(getColumnIndex(COLUMN_CHILD_INSTANCE_ID))
+                    allRelations.add(thisParent to thisChild)
+                }
+            }
+        }
+        allRelations
+    }
+/**
  * Gets a child instance id based on the parent id and repeat index.
  *
  * Queries the database and looks only at the first record. There should

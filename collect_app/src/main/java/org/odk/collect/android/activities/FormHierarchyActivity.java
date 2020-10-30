@@ -245,12 +245,18 @@ public class FormHierarchyActivity extends CollectAbstractActivity implements De
 
     /** Override to disable this button. */
     protected void showDeleteButton(boolean shouldShow) {
-        optionsMenu.findItem(R.id.menu_delete_child).setVisible(shouldShow);
+        // optionsMenu.findItem(R.id.menu_delete_child).setVisible(shouldShow);
+        // PMA-Linking BEGIN
+        optionsMenu.findItem(R.id.menu_delete_child).setVisible(false);
+        // PMA-Linking END
     }
 
     /** Override to disable this button. */
     protected void showAddButton(boolean shouldShow) {
-        optionsMenu.findItem(R.id.menu_add_repeat).setVisible(shouldShow);
+        // optionsMenu.findItem(R.id.menu_add_repeat).setVisible(shouldShow);
+        // PMA-Linking BEGIN
+        optionsMenu.findItem(R.id.menu_add_repeat).setVisible(false);
+        // PMA-Linking END
     }
 
     /** Override to disable this button. */

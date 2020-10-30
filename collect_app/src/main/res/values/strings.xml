@@ -707,4 +707,5 @@
     <string name="reset_subform_db">Relations database reset</string>
     <string name="reset_subform_db_confirm">Resetting the relations database is irreversible. Continue?</string>
     <string name="reset_subform_db_result">Relations database were reset</string>
+    <string name="subform_delete_repeat_with_child">Deleting this repeat group will delete its associated child subform.</string>
 </resources>

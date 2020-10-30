@@ -14,6 +14,7 @@ import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.formentry.audit.AuditEvent;
 import org.odk.collect.android.javarosawrapper.FormController;
+import org.odk.collect.android.subform.SubformActionResult;
 
 import static android.content.DialogInterface.BUTTON_NEGATIVE;
 import static android.content.DialogInterface.BUTTON_POSITIVE;
@@ -43,11 +44,27 @@ public class DeleteRepeatDialogFragment extends DialogFragment {
             name += " (" + (repeatCount + 1) + ")";
         }
 
+        // PMA-Linking BEGIN
+        SubformActionResult result = formController.getSubformManager().manageRepeatDelete(repeatCount + 1, true);
+        boolean needsDeleteSubform = result.getDeleted() > 0;
+        // PMA-Linking END
+
+
         AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
         alertDialog.setTitle(getActivity().getString(R.string.delete_repeat_ask));
-        alertDialog.setMessage(getActivity().getString(R.string.delete_repeat_confirm, name));
+        // PMA-Linking BEGIN
+        // alertDialog.setMessage(getActivity().getString(R.string.delete_repeat_confirm, name));
+        if (needsDeleteSubform) {
+            alertDialog.setMessage(getActivity().getString(R.string.subform_delete_repeat_with_child));
+        } else {
+            alertDialog.setMessage(getActivity().getString(R.string.delete_repeat_confirm, name));
+        }
+        // PMA-Linking END
         DialogInterface.OnClickListener quitListener = (dialog, i) -> {
             if (i == BUTTON_POSITIVE) { // yes
+                // PMA-Linking BEGIN
+                formController.getSubformManager().manageRepeatDelete(repeatCount + 1, false);
+                // PMA-Linking END
                 formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.DELETE_REPEAT, true, System.currentTimeMillis());
                 formController.deleteRepeat();
                 callback.deleteGroup();

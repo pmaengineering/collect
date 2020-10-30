@@ -18,6 +18,8 @@
 
 package org.odk.collect.android.tasks;
 
+import org.odk.collect.android.subform.SubformActionResult;
+
 /**
  * Author: Meletis Margaritis
  * Date: 15/3/2013
@@ -28,6 +30,7 @@ public class SaveToDiskResult {
     private int saveResult;
     private boolean complete;
     private String saveErrorMessage;
+    private SubformActionResult subformActionResult;
 
     public int getSaveResult() {
         return saveResult;
@@ -48,5 +51,13 @@ public class SaveToDiskResult {
 
     public String getSaveErrorMessage() {
         return saveErrorMessage;
+    }
+
+    public void setSubformActionResult(SubformActionResult subformActionResult) {
+        this.subformActionResult = subformActionResult;
+    }
+
+    public SubformActionResult getSubformActionResult() {
+        return subformActionResult;
     }
 }

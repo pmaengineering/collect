@@ -49,6 +49,7 @@ import org.odk.collect.android.formentry.audit.AuditConfig;
 import org.odk.collect.android.formentry.audit.AuditEventLogger;
 import org.odk.collect.android.forms.FormDesignException;
 import org.odk.collect.android.utilities.Appearances;
+import org.odk.collect.android.subform.SubformManager;
 import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.FormNameUtils;
 
@@ -121,11 +122,17 @@ public class FormController {
     private File instanceFile;
     private final FormEntryController formEntryController;
     private FormIndex indexWaitingForData;
+    private SubformManager subformManager;
 
     public FormController(File mediaFolder, FormEntryController fec, File instanceFile) {
         this.mediaFolder = mediaFolder;
         formEntryController = fec;
         this.instanceFile = instanceFile;
+        subformManager = new SubformManager(getFormDef(), instanceFile);
+    }
+
+    public SubformManager getSubformManager() {
+        return subformManager;
     }
 
     public FormDef getFormDef() {
@@ -143,6 +150,7 @@ public class FormController {
 
     public void setInstanceFile(File instanceFile) {
         this.instanceFile = instanceFile;
+        subformManager.setInstanceFile(instanceFile);
     }
 
     @Nullable

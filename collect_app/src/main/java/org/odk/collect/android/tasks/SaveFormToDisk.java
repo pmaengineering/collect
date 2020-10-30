@@ -51,6 +51,7 @@ import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.storage.StoragePathProvider;
 import org.odk.collect.android.storage.StorageSubdirectory;
+import org.odk.collect.android.subform.SubformActionResult;
 import org.odk.collect.android.utilities.EncryptionUtils;
 import org.odk.collect.android.utilities.EncryptionUtils.EncryptedFormInformation;
 import org.odk.collect.android.utilities.FileUtils;
@@ -88,6 +89,8 @@ public class SaveFormToDisk {
     public static final int SAVE_ERROR = 501;
     public static final int SAVED_AND_EXIT = 504;
     public static final int ENCRYPTION_ERROR = 505;
+    public static final int SUBFORM_RESULT = 601;
+    public static final int SUBFORM_RESULT_SAVE_EXIT = 602;
 
     public SaveFormToDisk(FormController formController, MediaUtils mediaUtils, boolean saveAndExit, boolean shouldFinalize, String updatedName,
                           Uri uri, Analytics analytics, ArrayList<String> tempFiles) {
@@ -138,11 +141,22 @@ public class SaveFormToDisk {
         try {
             exportData(shouldFinalize, progressListener);
 
+            // PMA-Linking BEGIN
+            SubformActionResult result = formController.getSubformManager().manageFormRelations(uri, false);
+
             if (formController.getInstanceFile() != null) {
                 removeSavepointFiles(formController.getInstanceFile().getName());
             }
 
-            saveToDiskResult.setSaveResult(saveAndExit ? SAVED_AND_EXIT : SAVED, shouldFinalize);
+            // saveToDiskResult.setSaveResult(saveAndExit ? SAVED_AND_EXIT : SAVED, shouldFinalize);
+            if (result.noAction()) {
+                saveToDiskResult.setSaveResult(saveAndExit ? SAVED_AND_EXIT : SAVED, shouldFinalize);
+            } else {
+                saveToDiskResult.setSubformActionResult(result);
+                saveToDiskResult.setSaveResult(saveAndExit ? SUBFORM_RESULT_SAVE_EXIT : SUBFORM_RESULT, shouldFinalize);
+            }
+            // PMA-Linking END
+
         } catch (EncryptionException e) {
             saveToDiskResult.setSaveErrorMessage(e.getMessage());
             saveToDiskResult.setSaveResult(ENCRYPTION_ERROR, shouldFinalize);

@@ -123,7 +123,7 @@ public class Collect extends Application implements LocalizedApplication {
         
         fixGoogleBug154855417();
 
-        setupStrictMode();
+        // setupStrictMode();
     }
 
     /**

@@ -51,10 +51,12 @@ import javax.xml.xpath.XPathFactory
  * @return Returns true if a parent form is updated, false if not.
  */
 fun manageParentForm(childId: Long, dryRun: Boolean = false): SubformActionResult {
+    Timber.i("Inside manage Parent Form for form $childId, dry run = $dryRun")
     val nodeMappings = getMappingsToParent(childId)
     if (nodeMappings.isEmpty()) return SubformActionResult() // no parent form found, no document updated
     val childInstancePath = getInstancePath(getInstanceUriFromId(childId))
     val parentId = nodeMappings.first().parentId
+    Timber.i("Child form $childId has parent form $parentId")
     val parentUri = getInstanceUriFromId(parentId)
     val parentInstancePath = getInstancePath(parentUri)
 
@@ -411,6 +413,7 @@ private fun writeDocumentToFile(document: Document, path: String) {
     val input = DOMSource(document)
     val transformer = TransformerFactory.newInstance().newTransformer()
     transformer.transform(input, output)
+    fos.close()
 }
 
 /**

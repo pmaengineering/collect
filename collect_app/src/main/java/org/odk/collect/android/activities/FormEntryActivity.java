@@ -130,6 +130,8 @@ import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.storage.StorageInitializer;
 import org.odk.collect.android.storage.StoragePathProvider;
 import org.odk.collect.android.storage.StorageSubdirectory;
+import org.odk.collect.android.subform.SubformActionResult;
+import org.odk.collect.android.subform.SubformExceptionKt;
 import org.odk.collect.android.tasks.FormLoaderTask;
 import org.odk.collect.android.tasks.SaveFormIndexTask;
 import org.odk.collect.android.tasks.SavePointTask;
@@ -1848,9 +1850,37 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
             }
         }
 
-        formSaveViewModel.saveForm(getIntent().getData(), complete, updatedSaveName, exit);
-
+        // PMA-Linking BEGIN
+        SubformActionResult subformActionResult = getFormController().getSubformManager().doManageDryRun(getIntent().getData());
+        if (subformActionResult.getDeleted() > 0) {
+            createDeleteSubformConfirmDialog(exit, complete, updatedSaveName, subformActionResult, current);
+        } else if (subformActionResult.getSelfDestruct()) {
+            createDeleteSubformConfirmDialog(true, complete, updatedSaveName, subformActionResult, current);
+        } else {
+            formSaveViewModel.saveForm(getIntent().getData(), complete, updatedSaveName, exit);
+        }
+        // PMA-Linking END
+        // formSaveViewModel.saveForm(getIntent().getData(), complete, updatedSaveName, exit);
         return true;
+    }
+
+    private void createDeleteSubformConfirmDialog(boolean exit, boolean complete, String updatedSaveName, SubformActionResult subformActionResult, boolean cancellable) {
+        Timber.i("Create delete subform dialog");
+        alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle(getString(R.string.subform_save_delete_title));
+        if (subformActionResult.getSelfDestruct()) {
+            alertDialog.setMessage(getString(R.string.subform_warn_delete_self, getString(R.string.subform_save_delete)));
+        } else {
+            alertDialog.setMessage(getString(R.string.subform_warn_delete_child, getString(R.string.subform_save_delete), subformActionResult.getDeleted()));
+        }
+        alertDialog.setButton(BUTTON_POSITIVE, getString(R.string.subform_save_delete), (dialogInterface, i) -> {
+            alertDialog.dismiss();
+            formSaveViewModel.saveForm(getIntent().getData(), complete, updatedSaveName, exit);
+        });
+        if (cancellable) {
+            alertDialog.setButton(BUTTON_NEGATIVE, getString(R.string.cancel), (dialog, i) -> alertDialog.dismiss());
+        }
+        alertDialog.show();
     }
 
     private void handleSaveResult(FormSaveViewModel.SaveResult result) {
@@ -1881,7 +1911,33 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                 }
                 formSaveViewModel.resumeFormEntry();
                 break;
-
+            // PMA-Linking BEGIN
+            case SAVED_SUBFORM:
+                DialogUtils.dismissDialog(SaveFormProgressDialogFragment.class, getSupportFragmentManager());
+                int created = result.getSubformActionResult().getCreated();
+                int updated = result.getSubformActionResult().getUpdated();
+                int deleted = result.getSubformActionResult().getDeleted();
+                String msgInfo = getString(R.string.others_updated_on_save, created, updated, deleted);
+                String msgFull = msgInfo;
+                if (result.getSubformActionResult().getErrorCode() == SubformExceptionKt.SAVE_FORM_ID_NOT_MISSING) {
+                    String badFormId = result.getSubformActionResult().getErrorData();
+                    String msg_warn = getString(R.string.bad_form_id_on_save, badFormId);
+                    msgFull = msg_warn + " " + msgInfo;
+                } else if (result.getSubformActionResult().getErrorCode() == SubformExceptionKt.SAVE_INSTANCE_XPATH_NOT_FOUND) {
+                    String badXPath = result.getSubformActionResult().getErrorData();
+                    String msg_warn = getString(R.string.bad_xpath_on_save, badXPath);
+                    msgFull = msg_warn + " " + msgInfo;
+                }
+                ToastUtils.showLongToast(msgFull);
+                if (result.getSubformActionResult().getSelfDestruct()) {
+                    finishAndReturnInstance();
+                }
+                if (result.getRequest().viewExiting()) {
+                    finishAndReturnInstance();
+                }
+                formSaveViewModel.resumeFormEntry();
+                break;
+            // PMA-Linking END
             case SAVE_ERROR:
                 DialogUtils.dismissDialog(SaveFormProgressDialogFragment.class, getSupportFragmentManager());
                 String message;

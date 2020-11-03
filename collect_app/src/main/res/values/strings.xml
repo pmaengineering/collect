@@ -708,4 +708,11 @@
     <string name="reset_subform_db_confirm">Resetting the relations database is irreversible. Continue?</string>
     <string name="reset_subform_db_result">Relations database were reset</string>
     <string name="subform_delete_repeat_with_child">Deleting this repeat group will delete its associated child subform.</string>
+    <string name="others_updated_on_save">Form successfully saved. Linked forms report: created (%1$d), updated (%2$d), deleted (%3$d).</string>
+    <string name="bad_xpath_on_save">Form saved. Improper save_instance xpath \"%1$s\" aborted subform creation.</string>
+    <string name="bad_form_id_on_save">Form saved. Non-existent form id \"%1$s\" aborted subform creation.</string>
+    <string name="subform_save_delete_title">Save and delete form</string>
+    <string name="subform_warn_delete_self">The values entered have invalidated this form. If you tap \"%s\", this form will be deleted and the form entry session will end.</string>
+    <string name="subform_save_delete">Save and delete</string>
+    <string name="subform_warn_delete_child">The values entered have invalidated linked form(s). If you tap \"%1$s\", then %2$d sub-form(s) will be deleted.</string>
 </resources>

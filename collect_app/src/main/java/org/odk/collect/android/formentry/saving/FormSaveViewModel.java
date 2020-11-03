@@ -27,6 +27,7 @@ import org.odk.collect.android.formentry.audit.AuditEvent;
 import org.odk.collect.android.formentry.audit.AuditUtils;
 import org.odk.collect.android.fragments.dialogs.ProgressDialogFragment;
 import org.odk.collect.android.javarosawrapper.FormController;
+import org.odk.collect.android.subform.SubformActionResult;
 import org.odk.collect.android.tasks.SaveFormToDisk;
 import org.odk.collect.android.tasks.SaveToDiskResult;
 import org.odk.collect.android.utilities.FileUtils;
@@ -43,6 +44,8 @@ import timber.log.Timber;
 
 import static org.odk.collect.android.tasks.SaveFormToDisk.SAVED;
 import static org.odk.collect.android.tasks.SaveFormToDisk.SAVED_AND_EXIT;
+import static org.odk.collect.android.tasks.SaveFormToDisk.SUBFORM_RESULT;
+import static org.odk.collect.android.tasks.SaveFormToDisk.SUBFORM_RESULT_SAVE_EXIT;
 import static org.odk.collect.android.utilities.StringUtils.isBlank;
 
 public class FormSaveViewModel extends ViewModel implements ProgressDialogFragment.Cancellable, RequiresFormController, QuestionMediaManager {
@@ -242,6 +245,24 @@ public class FormSaveViewModel extends ViewModel implements ProgressDialogFragme
                 saveResult.setValue(new SaveResult(SaveResult.State.SAVED, saveRequest, taskResult.getSaveErrorMessage()));
                 break;
             }
+            // PMA-Linking BEGIN
+            case SUBFORM_RESULT:
+            case SUBFORM_RESULT_SAVE_EXIT:
+                formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.FORM_SAVE, false, clock.getCurrentTime());
+
+                if (saveRequest.viewExiting) {
+                    if (saveRequest.shouldFinalize) {
+                        formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.FORM_EXIT, false, clock.getCurrentTime());
+                        formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.FORM_FINALIZE, true, clock.getCurrentTime());
+                    } else {
+                        formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.FORM_EXIT, true, clock.getCurrentTime());
+                    }
+                } else {
+                    AuditUtils.logCurrentScreen(formController, formController.getAuditEventLogger(), clock.getCurrentTime());
+                }
+                saveResult.setValue(new SaveResult(SaveResult.State.SAVED_SUBFORM, saveRequest, taskResult.getSaveErrorMessage(), taskResult.getSubformActionResult()));
+                break;
+            // PMA-Linking END
 
             case SaveFormToDisk.SAVE_ERROR: {
                 formController.getAuditEventLogger().logEvent(AuditEvent.AuditEventType.SAVE_ERROR, true, clock.getCurrentTime());
@@ -318,15 +339,21 @@ public class FormSaveViewModel extends ViewModel implements ProgressDialogFragme
         private final State state;
         private final String message;
         private final SaveRequest request;
+        private final SubformActionResult subformActionResult;
 
         SaveResult(State state, SaveRequest request) {
-            this(state, request, null);
+            this(state, request, null, null);
         }
 
         SaveResult(State state, SaveRequest request, String message) {
+            this(state, request, message, null);
+        }
+
+        SaveResult(State state, SaveRequest request, String message, SubformActionResult subformActionResult) {
             this.state = state;
             this.message = message;
             this.request = request;
+            this.subformActionResult = subformActionResult;
         }
 
         public State getState() {
@@ -343,11 +370,18 @@ public class FormSaveViewModel extends ViewModel implements ProgressDialogFragme
             SAVED,
             SAVE_ERROR,
             FINALIZE_ERROR,
-            CONSTRAINT_ERROR
+            CONSTRAINT_ERROR,
+            // PMA-Linking BEGIN
+            SAVED_SUBFORM
+            // PMA-Linking END
         }
 
         public SaveRequest getRequest() {
             return request;
+        }
+
+        public SubformActionResult getSubformActionResult() {
+            return subformActionResult;
         }
     }
 

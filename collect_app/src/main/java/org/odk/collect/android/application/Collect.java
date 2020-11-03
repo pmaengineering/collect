@@ -119,7 +119,7 @@ public class Collect extends Application {
         
         fixGoogleBug154855417();
 
-        setupStrictMode();
+        // setupStrictMode();
     }
 
     /**

@@ -109,14 +109,17 @@ class SubformManager(val formDef: FormDef, var instanceFile: File?) {
      */
     @Synchronized fun manageRepeatDelete(repeatIndex: Int, dryRun: Boolean = false): SubformActionResult {
         val parentId = instanceId
+        Timber.i("Inside manageRepeatDelete for instance $parentId, group $repeatIndex (dry run: $dryRun)")
         return if (parentId >= 0 && repeatIndex >= 0) {
             val childInstanceId = getChild(parentId, repeatIndex.toLong())
             deleteInstanceAndChildren(childInstanceId, dryRun).also {
+                Timber.i("Returning $it (dryRun=$dryRun)")
                 if ( !dryRun ) {
                     updateRepeatSiblingInfo(parentId, repeatIndex.toLong())
                 }
             }
         } else {
+            Timber.i("manageRepeatDelete returning empty SubformActionResult")
             SubformActionResult()
         }
     }

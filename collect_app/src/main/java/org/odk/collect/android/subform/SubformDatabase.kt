@@ -123,7 +123,7 @@ fun insert(parentId: String, parentNode: String, repeatableNode: String?,
                     put(COLUMN_REPEATABLE, repeatableNode)
                 })
             } catch (e: SQLException) {
-                Timber.w("SQLException when inserting parentId $parentId, parentNode $parentNode, repeatIndex $repeatIndex, childId $childId, childNode $childNode")
+                // Timber.w("SQLException when inserting parentId $parentId, parentNode $parentNode, repeatIndex $repeatIndex, childId $childId, childNode $childNode")
                 if (!ignore) throw e else -1
             } finally {
                 close()
@@ -140,12 +140,13 @@ fun getAllRelations(): Set<Pair<Long, Long>> =
         val allRelations = mutableSetOf<Pair<Long, Long>>()
         cursor?.run {
             if (moveToFirst()) {
-                while(moveToNext()) {
+                do {
                     val thisParent = getLong(getColumnIndex(COLUMN_PARENT_INSTANCE_ID))
                     val thisChild = getLong(getColumnIndex(COLUMN_CHILD_INSTANCE_ID))
                     allRelations.add(thisParent to thisChild)
-                }
+                } while(moveToNext())
             }
+            close()
         }
         allRelations
     }
@@ -205,10 +206,10 @@ fun getChildren(parentId: Long): List<Long> =
             val cursor = query(TABLE_NAME, projection, selection, selectionArgs, null, null, null)
             cursor?.run{
                 if (moveToFirst()) {
-                    while (moveToNext()) {
+                    do {
                         val child = getLong(getColumnIndex(COLUMN_CHILD_INSTANCE_ID))
                         uniqueChildren.add(child)
-                    }
+                    } while (moveToNext())
                 }
                 close()
             }
@@ -269,12 +270,12 @@ fun getMappingsToParent(childId: Long): List<NodeMapping> =
             val cursor = query(TABLE_NAME, projection, selection, selectionArgs, null, null, null)
             cursor?.run {
                 if (moveToFirst()) {
-                    while (moveToNext()) {
+                     do {
                         val parentId = getLong(getColumnIndex(COLUMN_PARENT_INSTANCE_ID))
                         val parentNode = getString(getColumnIndex(COLUMN_PARENT_NODE))
                         val childNode = getString(getColumnIndex(COLUMN_CHILD_NODE))
                         nodeMappings.add(NodeMapping(parentId, parentNode, childId, childNode))
-                    }
+                    } while (moveToNext())
                 }
                 close()
             }
@@ -298,10 +299,10 @@ fun getAllChildren(): Set<Long> =
             val cursor = query(true, TABLE_NAME, projection, null, null, null, null, null, null)
             cursor?.run {
                 if(moveToFirst()) {
-                    while (moveToNext()) {
+                    do {
                         val thisChild = getLong(getColumnIndex(COLUMN_CHILD_INSTANCE_ID))
                         children.add(thisChild)
-                    }
+                    } while (moveToNext())
                 }
                 close()
             }
@@ -411,6 +412,8 @@ fun deleteAsChild(instanceId: Long): Long =
             recordsDeleted.toLong()
         }
 
+data class SiblingInfo(val id: String, val parentNode: String, val parentIndex: Long, val repeatable: String)
+
 /**
  * Updates repeat group sibling db info.
  *
@@ -445,22 +448,23 @@ fun updateRepeatSiblingInfo(parentId: Long, repeatIndex: Long) =
             val selectionArgs = arrayOf(parentId.toString(), repeatIndex.toString())
             val cursor = query(TABLE_NAME, projection, selection, selectionArgs, null, null, COLUMN_PARENT_INDEX)
             cursor?.let {
+                val foundRepeats = mutableListOf<SiblingInfo>()
                 if (it.moveToFirst()) {
-                    val recordId = it.getString(it.getColumnIndex(COLUMN_ID))
-                    val foundRepeats = mutableListOf<Triple<String, Long, String>>()
-                    while (it.moveToNext()) {
-                        val oldParentNode = it.getString(it.getColumnIndex(COLUMN_PARENT_NODE))
-                        val oldParentIndex = it.getLong(it.getColumnIndex(COLUMN_PARENT_INDEX))
-                        val oldParentRepeatable = it.getString(it.getColumnIndex(COLUMN_REPEATABLE))
-                        if (oldParentIndex.toInt() == 1) {
+                    do {
+                        val id = it.getString(it.getColumnIndex(COLUMN_ID))
+                        val node = it.getString(it.getColumnIndex(COLUMN_PARENT_NODE))
+                        val index = it.getLong(it.getColumnIndex(COLUMN_PARENT_INDEX))
+                        val repeatable = it.getString(it.getColumnIndex(COLUMN_REPEATABLE))
+                        if (index.toInt() == 1) {
                             Timber.w("Trying to shift index down on " +
-                                    "$oldParentNode. Index should be bigger than 1!")
+                                    "$node. Index should be bigger than 1!")
                             continue
                         }
-                        foundRepeats.add(Triple(oldParentNode, oldParentIndex, oldParentRepeatable))
-                    }
-                    foundRepeats.forEach { triple ->
-                        val (oldParentNode, oldParentIndex, oldParentRepeatable) = triple
+                        val siblingInfo = SiblingInfo(id, node, index, repeatable)
+                        foundRepeats.add(siblingInfo)
+                    } while (it.moveToNext())
+                    foundRepeats.forEach { it ->
+                        val (recordId, oldParentNode, oldParentIndex, oldParentRepeatable) = it
                         val newParentIndex = oldParentIndex - 1
                         val newParentNode = replaceIndex(oldParentNode, oldParentIndex,
                                 newParentIndex)
@@ -470,6 +474,7 @@ fun updateRepeatSiblingInfo(parentId: Long, repeatIndex: Long) =
                         cv.put(COLUMN_PARENT_NODE, newParentNode)
                         cv.put(COLUMN_PARENT_INDEX, newParentIndex)
                         cv.put(COLUMN_REPEATABLE, newParentRepeatable)
+                        Timber.d("Updating Row ID $recordId")
                         Timber.d("Old node $oldParentNode -> new node $newParentNode")
                         Timber.d("Old index $oldParentIndex -> new index $newParentIndex")
                         Timber.d("Old repeatable $oldParentRepeatable -> new repeatable $newParentRepeatable")
@@ -498,6 +503,6 @@ private fun replaceIndex(node: String, oldIndex: Long, newIndex: Long): String {
     val find = "[$oldIndex]"
     val replace = "[$newIndex]"
     val newNode = node.replace(find, replace)
-    Timber.v("Replacing node index from \'$node\' to \'$newNode\'")
+    // Timber.v("Replacing node index from \'$node\' to \'$newNode\'")
     return newNode
 }

@@ -57,6 +57,7 @@ fun manageParentForm(childId: Long, dryRun: Boolean = false): SubformActionResul
     val childInstancePath = getInstancePath(getInstanceUriFromId(childId))
     val parentId = nodeMappings.first().parentId
     Timber.i("Child form $childId has parent form $parentId")
+    Timber.i("Mappings: $nodeMappings")
     val parentUri = getInstanceUriFromId(parentId)
     val parentInstancePath = getInstancePath(parentUri)
 
@@ -65,6 +66,7 @@ fun manageParentForm(childId: Long, dryRun: Boolean = false): SubformActionResul
 
     val xpath = XPathFactory.newInstance().newXPath()
     val mappedNodeUpdated = nodeMappings.map {
+        Timber.i("Working with node $it")
         // todo: wrap in try catch block and catch errors
         try{
             val childExpression = xpath.compile(it.childNode)
@@ -351,17 +353,21 @@ fun insertAllIntoChild(directives: List<SubformDirective>, childInstance: Uri, p
  * find a node this routine is aborted.
  */
 private fun insertIntoChild(directive: SubformDirective, document: Document): Boolean {
-    val childInstanceValue = if (directive.isRelevant) directive.nodeValue else ""
+    val parentValue = if (directive.isRelevant) directive.nodeValue else ""
     val xpath = XPathFactory.newInstance().newXPath()
     val childInstanceXpath = directive.attrValue
     val expression = xpath.compile(childInstanceXpath)
-    val node = expression.evaluate(document, XPathConstants.NODE) as Node
+    val childNode = expression.evaluate(document, XPathConstants.NODE) as Node
+    val childValue = childNode.textContent
     // TODO: How to figure out what happens with a bad XPath? If so throw error (SaveInstanceXPathNotFound) and catch in
-    return if (node.textContent != childInstanceValue) {
-        Timber.d("Inserting $childInstanceValue into $childInstanceXpath")
-        node.textContent = childInstanceValue
+    return if (childValue != parentValue) {
+        Timber.i("Child form at $childInstanceXpath has value $childValue. Updated to match value $parentValue from ${directive.nodeXPath}")
+        childNode.textContent = parentValue
         true
-    } else { false }
+    } else {
+        Timber.i("Child form at $childInstanceXpath has value $childValue, which matches value $parentValue from ${directive.nodeXPath}")
+        false
+    }
 }
 
 fun updateRelationsDatabase(directive: SubformDirective, childInstance: Uri, parentId: Long) {
@@ -421,6 +427,7 @@ private fun writeDocumentToFile(document: Document, path: String) {
  * in the form relations database.
  */
 fun deleteInstanceAndChildren(instanceId: Long, dryRun: Boolean = false): SubformActionResult {
+    Timber.i("Inside deleteInstanceAndChildren")
     var subformActionResult = SubformActionResult()
     if (instanceId < 0) {
         return subformActionResult
@@ -437,6 +444,7 @@ fun deleteInstanceAndChildren(instanceId: Long, dryRun: Boolean = false): Subfor
         val wasDeleted = Collect.getInstance().contentResolver.delete(deleteForm, null, null)
         subformActionResult += SubformActionResult(deleted=wasDeleted)
     }
+    Timber.i("deleteInstanceAndChildren (dry run = $dryRun) returning: $subformActionResult")
     return subformActionResult
 }
 

@@ -15,6 +15,7 @@
 package org.odk.collect.android.activities;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -2339,6 +2340,16 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                     });
                 } else {
                     Intent reqIntent = getIntent();
+
+                    // PMA-Linking BEGIN
+                    Uri instanceUri = reqIntent.getData();
+                    String uriMimeType = getContentResolver().getType(instanceUri);
+                    if (uriMimeType.equals(InstanceColumns.CONTENT_ITEM_TYPE)) {
+                        long instanceId = ContentUris.parseId(instanceUri);
+                        formController.getSubformManager().setInstanceId(instanceId);
+                    }
+                    // PMA-Linking END
+
                     boolean showFirst = reqIntent.getBooleanExtra("start", false);
 
                     if (!showFirst) {

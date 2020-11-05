@@ -270,13 +270,13 @@ data class SubformDeleteInfo(val selfDestruct: Boolean, val deleteCount: Int)
 class SubformDeviceSummary() {
     val allRelations = getAllRelations()
     val allParents = allRelations.map { it.first }.toSet()
-    val allChildren = allRelations.map { it.second }.toSet()
+    val allChildren = allRelations.map { it.second }.toList()
     val parentToChildren = allRelations.groupBy({it.first}, {it.second})
     val childToParents = allRelations.groupBy({it.second}, {it.first})
 
     override fun toString(): String {
         return allRelations.map {
             StringBuilder().append(it.first).append(" -> ").append(it.second)
-        }.joinToString(prefix= "[\n", postfix = "\n]", separator = "\n")
+        }.joinToString(prefix= "[", postfix = "]", separator = ", ")
     }
 }

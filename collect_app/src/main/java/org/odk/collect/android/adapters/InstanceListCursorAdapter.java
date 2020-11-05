@@ -30,6 +30,7 @@ import org.odk.collect.android.instances.Instance;
 import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProvider;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
+import org.odk.collect.android.subform.SubformDeviceSummary;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,11 +41,16 @@ import timber.log.Timber;
 public class InstanceListCursorAdapter extends SimpleCursorAdapter {
     private final Context context;
     private final boolean shouldCheckDisabled;
+    private SubformDeviceSummary subformDeviceSummary;
 
     public InstanceListCursorAdapter(Context context, int layout, Cursor c, String[] from, int[] to, boolean shouldCheckDisabled) {
         super(context, layout, c, from, to);
         this.context = context;
         this.shouldCheckDisabled = shouldCheckDisabled;
+    }
+
+    public void setSubformDeviceSummary(SubformDeviceSummary subformDeviceSummary) {
+        this.subformDeviceSummary = subformDeviceSummary;
     }
 
     @Override
@@ -151,6 +157,12 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
         String formStatus = getCursor().getString(getCursor().getColumnIndex(InstanceColumns.STATUS));
 
         int imageResourceId = getFormStateImageResourceIdForStatus(formStatus);
+        if (subformDeviceSummary != null) {
+            Long instanceId = getCursor().getLong(getCursor().getColumnIndex(InstanceColumns._ID));
+            if (subformDeviceSummary.getAllParents().contains(instanceId)) {
+                imageResourceId = R.drawable.form_state_parent_form;
+            }
+        }
         imageView.setImageResource(imageResourceId);
         imageView.setTag(imageResourceId);
     }

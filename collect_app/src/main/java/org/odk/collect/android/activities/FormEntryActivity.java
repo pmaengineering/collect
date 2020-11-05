@@ -2438,6 +2438,23 @@ public class FormEntryActivity extends CollectAbstractActivity implements Animat
                             startFormEntry(formController, warningMsg);
                         }
                     });
+                    // PMA-Linking BEGIN
+                    StringBuilder sb = new StringBuilder();
+                    if (formController.getSubformManager().getMissingSaveForms().size() > 0) {
+                        String missingSaveForms = formController.getSubformManager().missingSaveFormsList();
+                        String missingSaveFormMessage = getString(R.string.subform_missing_save_form_warning, missingSaveForms);
+                        sb.append(missingSaveFormMessage);
+                    }
+                    if (formController.getSubformManager().hasSaveFormAndDeleteForm()) {
+                        if (sb.length() > 0) {
+                            sb.append("\n\n");
+                        }
+                        sb.append(getString(R.string.subform_save_form_and_delete_form_warning));
+                    }
+                    if (sb.length() > 0) {
+                        createErrorDialog(sb.toString(), false);
+                    }
+                    // PMA-Linking END
                 } else {
                     Intent reqIntent = getIntent();
 

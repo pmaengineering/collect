@@ -715,4 +715,6 @@
     <string name="subform_warn_delete_self">The values entered have invalidated this form. If you tap \"%s\", this form will be deleted and the form entry session will end.</string>
     <string name="subform_save_delete">Save and delete</string>
     <string name="subform_warn_delete_child">The values entered have invalidated linked form(s). If you tap \"%1$s\", then %2$d sub-form(s) will be deleted.</string>
+    <string name="subform_missing_save_form_warning">Form linking will not work with this form. This form definition was unable to find linked form definitions for form ids: %s. Please download forms with these form ids.</string>
+    <string name="subform_save_form_and_delete_form_warning">This form definition defines a save form and a delete form directive. Unknown behavior could occur!</string>
 </resources>

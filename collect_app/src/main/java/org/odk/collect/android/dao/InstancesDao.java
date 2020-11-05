@@ -34,7 +34,7 @@ import java.util.List;
 import timber.log.Timber;
 
 /**
- * This class is used to encapsulate all access to the {@link org.odk.collect.android.provider.InstanceProvider#DATABASE_NAME}
+ * This class is used to encapsulate all access to the {@link org.odk.collect.android.provider.InstanceProvider}
  * For more information about this pattern go to https://en.wikipedia.org/wiki/Data_access_object
  */
 public class InstancesDao {
@@ -129,7 +129,7 @@ public class InstancesDao {
         return cursorLoader;
     }
 
-    private String getSqlIsOneOf(List<Long> formIds) {
+    private static String getSqlIsOneOf(List<Long> formIds) {
         if (formIds.size() == 0) {
             return "";
         }
@@ -151,7 +151,7 @@ public class InstancesDao {
         }
     }
 
-    private String getSqlIsNotOneOf(List<Long> formIds) {
+    private static String getSqlIsNotOneOf(List<Long> formIds) {
         if (formIds.size() == 0) {
             return "";
         }
@@ -167,6 +167,16 @@ public class InstancesDao {
             }
             return sb.toString();
         }
+    }
+
+    public int getCountIncomplete(List<Long> formIds) {
+        String sqlIsOneOf = InstancesDao.getSqlIsOneOf(formIds);
+        String selection = InstanceColumns.STATUS + " =? " + sqlIsOneOf;
+        String[] selectionArgs = {Instance.STATUS_INCOMPLETE};
+        Cursor c = getInstancesCursor(selection, selectionArgs);
+        int count = c.getCount();
+        c.close();
+        return count;
     }
 
     public Cursor getSavedInstancesCursor(String sortOrder) {

@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.dao.FormsDao;
+import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.instances.Instance;
 import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProvider;
@@ -34,6 +35,7 @@ import org.odk.collect.android.subform.SubformDeviceSummary;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import timber.log.Timber;
@@ -151,6 +153,25 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
 
         final TextView formSubtitle = view.findViewById(R.id.form_subtitle);
         formSubtitle.setText(subtext);
+        if (subformDeviceSummary != null) {
+            Long instanceId = getCursor().getLong(getCursor().getColumnIndex(InstanceColumns._ID));
+            if (subformDeviceSummary.getAllParents().contains(instanceId)) {
+                // Get the count of incomplete
+                String messageCountIncomplete = getMessageFormRelationsCountIncomplete(instanceId);
+                final TextView formSubtitle2 = view.findViewById(R.id.form_subtitle2);
+                formSubtitle2.setVisibility(View.VISIBLE);
+                formSubtitle2.setText(messageCountIncomplete);
+            }
+        }
+    }
+
+    private String getMessageFormRelationsCountIncomplete(Long parentId) {
+        List<Long> relatedForms = subformDeviceSummary.getParentToChildren().get(parentId);
+        relatedForms.add(0, parentId);
+        int countIncomplete = new InstancesDao().getCountIncomplete(relatedForms);
+        int countComplete = relatedForms.size() - countIncomplete;
+        String message = "Completed: " + countComplete + " / " + relatedForms.size();
+        return message;
     }
 
     private void setImageFromStatus(ImageView imageView) {

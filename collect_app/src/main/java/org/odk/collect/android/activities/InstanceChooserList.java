@@ -38,10 +38,13 @@ import org.odk.collect.android.listeners.DiskSyncListener;
 import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.storage.StorageInitializer;
+import org.odk.collect.android.subform.SubformDeviceSummary;
 import org.odk.collect.android.tasks.InstanceSyncTask;
 import org.odk.collect.android.utilities.ApplicationConstants;
 import org.odk.collect.android.utilities.MultiClickGuard;
 import org.odk.collect.android.utilities.PermissionUtils;
+
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -65,10 +68,29 @@ public class InstanceChooserList extends InstanceListActivity implements
 
     private boolean editMode;
 
+    // PMA-Linking BEGIN
+    private static final String FORM_RELATIONS_PARENT_ID = "formRelationsParentId";
+    private Long formRelationsParentId;
+    private SubformDeviceSummary subformDeviceSummary;
+    private boolean formRelationsScreen;
+    // PMA-Linking END
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.form_chooser_list);
+
+        // PMA-Linking BEGIN
+        subformDeviceSummary = new SubformDeviceSummary();
+        formRelationsParentId = getIntent().getLongExtra(FORM_RELATIONS_PARENT_ID, -1);
+        formRelationsScreen = formRelationsParentId >= 0;
+        Timber.i(subformDeviceSummary.toString());
+        if (formRelationsScreen) {
+            Timber.i("This IS a form relations screen");
+        } else {
+            Timber.i("This is NOT a form relations screen");
+        }
+        // PMA-Linking END
 
         String formMode = getIntent().getStringExtra(ApplicationConstants.BundleKeys.FORM_MODE);
         if (formMode == null || ApplicationConstants.FormModes.EDIT_SAVED.equalsIgnoreCase(formMode)) {
@@ -112,6 +134,7 @@ public class InstanceChooserList extends InstanceListActivity implements
     }
 
     private void init() {
+        Timber.i("Calling init() in InstanceChooserList");
         setupAdapter();
         instanceSyncTask = new InstanceSyncTask();
         instanceSyncTask.setDiskSyncListener(this);
@@ -127,39 +150,47 @@ public class InstanceChooserList extends InstanceListActivity implements
         if (MultiClickGuard.allowClick(getClass().getName())) {
             if (view.isEnabled()) {
                 Cursor c = (Cursor) listView.getAdapter().getItem(position);
-                Uri instanceUri =
-                        ContentUris.withAppendedId(InstanceColumns.CONTENT_URI,
-                                c.getLong(c.getColumnIndex(InstanceColumns._ID)));
+                Long instanceId = c.getLong(c.getColumnIndex(InstanceColumns._ID));
+                Uri instanceUri = ContentUris.withAppendedId(InstanceColumns.CONTENT_URI, instanceId);
 
                 String action = getIntent().getAction();
                 if (Intent.ACTION_PICK.equals(action)) {
                     // caller is waiting on a picked form
                     setResult(RESULT_OK, new Intent().setData(instanceUri));
                 } else {
-                    // the form can be edited if it is incomplete or if, when it was
-                    // marked as complete, it was determined that it could be edited
-                    // later.
-                    String status = c.getString(c.getColumnIndex(InstanceColumns.STATUS));
-                    String strCanEditWhenComplete =
-                            c.getString(c.getColumnIndex(InstanceColumns.CAN_EDIT_WHEN_COMPLETE));
-
-                    boolean canEdit = status.equals(Instance.STATUS_INCOMPLETE)
-                            || Boolean.parseBoolean(strCanEditWhenComplete);
-                    if (!canEdit) {
-                        createErrorDialog(getString(R.string.cannot_edit_completed_form),
-                                DO_NOT_EXIT);
-                        return;
-                    }
-                    // caller wants to view/edit a form, so launch formentryactivity
-                    Intent parentIntent = this.getIntent();
-                    Intent intent = new Intent(Intent.ACTION_EDIT, instanceUri);
-                    String formMode = parentIntent.getStringExtra(ApplicationConstants.BundleKeys.FORM_MODE);
-                    if (formMode == null || ApplicationConstants.FormModes.EDIT_SAVED.equalsIgnoreCase(formMode)) {
-                        intent.putExtra(ApplicationConstants.BundleKeys.FORM_MODE, ApplicationConstants.FormModes.EDIT_SAVED);
+                    // PMA-Linking BEGIN
+                    if (!formRelationsScreen && subformDeviceSummary.getAllParents().contains(instanceId)) {
+                        // This is a parent form, so launch another InstanceChooserList
+                        Intent formRelationsIntent = new Intent(getIntent());
+                        formRelationsIntent.putExtra(FORM_RELATIONS_PARENT_ID, instanceId);
+                        startActivity(formRelationsIntent);
                     } else {
-                        intent.putExtra(ApplicationConstants.BundleKeys.FORM_MODE, ApplicationConstants.FormModes.VIEW_SENT);
+                    // PMA-Linking END
+                        // the form can be edited if it is incomplete or if, when it was
+                        // marked as complete, it was determined that it could be edited
+                        // later.
+                        String status = c.getString(c.getColumnIndex(InstanceColumns.STATUS));
+                        String strCanEditWhenComplete =
+                                c.getString(c.getColumnIndex(InstanceColumns.CAN_EDIT_WHEN_COMPLETE));
+
+                        boolean canEdit = status.equals(Instance.STATUS_INCOMPLETE)
+                                || Boolean.parseBoolean(strCanEditWhenComplete);
+                        if (!canEdit) {
+                            createErrorDialog(getString(R.string.cannot_edit_completed_form),
+                                    DO_NOT_EXIT);
+                            return;
+                        }
+                        // caller wants to view/edit a form, so launch formentryactivity
+                        Intent parentIntent = this.getIntent();
+                        Intent intent = new Intent(Intent.ACTION_EDIT, instanceUri);
+                        String formMode = parentIntent.getStringExtra(ApplicationConstants.BundleKeys.FORM_MODE);
+                        if (formMode == null || ApplicationConstants.FormModes.EDIT_SAVED.equalsIgnoreCase(formMode)) {
+                            intent.putExtra(ApplicationConstants.BundleKeys.FORM_MODE, ApplicationConstants.FormModes.EDIT_SAVED);
+                        } else {
+                            intent.putExtra(ApplicationConstants.BundleKeys.FORM_MODE, ApplicationConstants.FormModes.VIEW_SENT);
+                        }
+                        startActivity(intent);
                     }
-                    startActivity(intent);
                 }
                 finish();
             } else {
@@ -200,8 +231,12 @@ public class InstanceChooserList extends InstanceListActivity implements
         int[] view = {R.id.form_title, R.id.form_subtitle2};
 
         boolean shouldCheckDisabled = !editMode;
-        listAdapter = new InstanceListCursorAdapter(
+        InstanceListCursorAdapter instanceListCursorAdapter = new InstanceListCursorAdapter(
                 this, R.layout.form_chooser_list_item, null, data, view, shouldCheckDisabled);
+        if (!formRelationsScreen) {
+            instanceListCursorAdapter.setSubformDeviceSummary(subformDeviceSummary);
+        }
+        listAdapter = instanceListCursorAdapter;
         listView.setAdapter(listAdapter);
     }
 
@@ -219,8 +254,14 @@ public class InstanceChooserList extends InstanceListActivity implements
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         showProgressBar();
-        if (editMode) {
-            return new InstancesDao().getUnsentInstancesCursorLoader(getFilterText(), getSortingOrder());
+        if (editMode && formRelationsScreen) {
+            Long parentId = getIntent().getLongExtra(FORM_RELATIONS_PARENT_ID, -1);
+            List<Long> relatedForms = subformDeviceSummary.getParentToChildren().get(parentId);
+            relatedForms.add(0, parentId);
+            return new InstancesDao().getRelatedUnsentInstancesCursorLoader(getFilterText(), getSortingOrder(), relatedForms);
+        } else if (editMode) { // && !formRelationsScreen
+            List<Long> children = subformDeviceSummary.getAllChildren();
+            return new InstancesDao().getNonChildrenUnsentInstancesCursorLoader(getFilterText(), getSortingOrder(), children);
         } else {
             return new InstancesDao().getSentInstancesCursorLoader(getFilterText(), getSortingOrder());
         }

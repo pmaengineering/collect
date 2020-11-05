@@ -31,6 +31,8 @@ import org.odk.collect.android.utilities.ApplicationConstants;
 import java.util.ArrayList;
 import java.util.List;
 
+import timber.log.Timber;
+
 /**
  * This class is used to encapsulate all access to the {@link org.odk.collect.android.provider.InstanceProvider#DATABASE_NAME}
  * For more information about this pattern go to https://en.wikipedia.org/wiki/Data_access_object
@@ -85,22 +87,86 @@ public class InstancesDao {
         return getInstancesCursorLoader(null, selection, selectionArgs, sortOrder);
     }
 
-    public CursorLoader getUnsentInstancesCursorLoader(CharSequence charSequence, String sortOrder) {
-        CursorLoader cursorLoader;
+    public CursorLoader getNonChildrenUnsentInstancesCursorLoader(CharSequence charSequence, String sortOrder, List<Long> children) {
+        String selection;
+        String[] selectionArgs;
+        String sqlIsNotOneOf = getSqlIsNotOneOf(children);
         if (charSequence.length() == 0) {
-            cursorLoader = getUnsentInstancesCursorLoader(sortOrder);
+            selection = InstanceColumns.STATUS + " !=?" + sqlIsNotOneOf;
+            selectionArgs = new String[]{Instance.STATUS_SUBMITTED};
         } else {
-            String selection =
+            selection =
                     InstanceColumns.STATUS + " !=? and "
-                            + InstanceColumns.DISPLAY_NAME + " LIKE ?";
-            String[] selectionArgs = {
+                            + InstanceColumns.DISPLAY_NAME + " LIKE ?"
+                            + sqlIsNotOneOf;
+            selectionArgs = new String[]{
                     Instance.STATUS_SUBMITTED,
                     "%" + charSequence + "%"};
-
-            cursorLoader = getInstancesCursorLoader(null, selection, selectionArgs, sortOrder);
         }
-
+        Timber.i("NonChildrenUnsentInstancesCursorLoader: " + selection);
+        CursorLoader cursorLoader = getInstancesCursorLoader(null, selection, selectionArgs, sortOrder);
         return cursorLoader;
+    }
+
+    public CursorLoader getRelatedUnsentInstancesCursorLoader(CharSequence charSequence, String sortOrder, List<Long> relatedForms) {
+        String selection;
+        String[] selectionArgs;
+        String sqlIsOneOf = getSqlIsOneOf(relatedForms);
+        if (charSequence.length() == 0) {
+            selection = InstanceColumns.STATUS + " !=?" + sqlIsOneOf;
+            selectionArgs = new String[]{Instance.STATUS_SUBMITTED};
+        } else {
+            selection =
+                    InstanceColumns.STATUS + " !=? and "
+                            + InstanceColumns.DISPLAY_NAME + " LIKE ?"
+                            + sqlIsOneOf;
+            selectionArgs = new String[]{
+                    Instance.STATUS_SUBMITTED,
+                    "%" + charSequence + "%"};
+        }
+        Timber.i("RelatedUnsentInstancesCursorLoader: " + selection);
+        CursorLoader cursorLoader = getInstancesCursorLoader(null, selection, selectionArgs, sortOrder);
+        return cursorLoader;
+    }
+
+    private String getSqlIsOneOf(List<Long> formIds) {
+        if (formIds.size() == 0) {
+            return "";
+        }
+        else if (formIds.size() == 1) {
+            return " AND " + InstanceColumns._ID + " = " + formIds.get(0);
+        }
+        else {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" AND (");
+            for (int i = 0; i < formIds.size(); i++) {
+                String thisClause = InstanceColumns._ID + " = " + formIds.get(i);
+                sb.append(thisClause);
+                if (i < formIds.size() - 1) {
+                    sb.append(" OR ");
+                }
+            }
+            sb.append(")");
+            return sb.toString();
+        }
+    }
+
+    private String getSqlIsNotOneOf(List<Long> formIds) {
+        if (formIds.size() == 0) {
+            return "";
+        }
+        else {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" AND ");
+            for (int i = 0; i < formIds.size(); i++) {
+                String thisClause = InstanceColumns._ID + " != " + formIds.get(i);
+                sb.append(thisClause);
+                if (i < formIds.size() - 1) {
+                    sb.append(" AND ");
+                }
+            }
+            return sb.toString();
+        }
     }
 
     public Cursor getSavedInstancesCursor(String sortOrder) {

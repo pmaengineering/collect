@@ -20,6 +20,7 @@ import org.odk.collect.android.forms.FormsRepository;
 import org.odk.collect.android.instancemanagement.InstanceDeleter;
 import org.odk.collect.android.instances.InstancesRepository;
 import org.odk.collect.android.listeners.DeleteInstancesListener;
+import org.odk.collect.android.subform.SubformDatabaseKt;
 
 import timber.log.Timber;
 
@@ -62,6 +63,8 @@ public class DeleteInstancesTask extends AsyncTask<Long, Integer, Integer> {
             }
             try {
                 instanceDeleter.delete(param);
+                SubformDatabaseKt.deleteAsChild(param);
+                SubformDatabaseKt.deleteAsParent(param);
                 deleted++;
 
                 successCount++;

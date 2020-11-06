@@ -14,6 +14,7 @@
 
 package org.odk.collect.android.activities;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -25,6 +26,7 @@ import android.view.View.OnLongClickListener;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -46,12 +48,16 @@ import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.network.NetworkStateProvider;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.PreferencesActivity;
+import org.odk.collect.android.subform.SubformDeviceSummary;
 import org.odk.collect.android.tasks.InstanceSyncTask;
 import org.odk.collect.android.utilities.PermissionUtils;
 import org.odk.collect.android.utilities.PlayServicesChecker;
 import org.odk.collect.android.utilities.ToastUtils;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -93,6 +99,10 @@ public class InstanceUploaderListActivity extends InstanceListActivity implement
     // Default to true so the send button is disabled until the worker status is updated by the
     // observer
     private boolean autoSendOngoing = true;
+
+    // PMA-Linking BEGIN
+    private SubformDeviceSummary subformDeviceSummary;
+    // PMA-Linking END
 
     @Inject
     Analytics analytics;
@@ -150,19 +160,94 @@ public class InstanceUploaderListActivity extends InstanceListActivity implement
 
         if (checkedItemCount > 0) {
             // items selected
-            uploadSelectedFiles();
-            setAllToCheckedState(listView, false);
-            toggleButtonLabel(findViewById(R.id.toggle_button), listView);
-            uploadButton.setEnabled(false);
+            // PMA-Linking BEGIN
+            if (areAllRelationsFinalized()) {
+                List<Long> extraRelations = getExtraRelations();
+                if (extraRelations.size() > 0) {
+                    confirmAdditionalFormRelationsSend(extraRelations);
+                } else {
+            // PMA-Linking END
+                    uploadSelectedFiles();
+                    setAllToCheckedState(listView, false);
+                    toggleButtonLabel(findViewById(R.id.toggle_button), listView);
+                    uploadButton.setEnabled(false);
+                }
+            }
         } else {
             // no items selected
             ToastUtils.showLongToast(R.string.noselect_error);
         }
     }
 
+    // PMA-Linking BEGIN
+    private boolean areAllRelationsFinalized() {
+        long[] instanceIds = listView.getCheckedItemIds();
+        List<Long> instanceIdsList = new ArrayList<>(instanceIds.length);
+        for (int i = 0; i < instanceIds.length; i++) {
+            instanceIdsList.add(instanceIds[i]);
+        }
+        Timber.i("Checked items:" + instanceIdsList.toString());
+        List<Long> allRelatedIds = subformDeviceSummary.getAllRelatedIds(instanceIdsList);
+        Timber.i("Related IDs:" + allRelatedIds.toString());
+        int countIncomplete = instancesDao.getCountIncomplete(allRelatedIds);
+        Timber.i("Count incomplete:" + countIncomplete);
+        boolean allFinalized = countIncomplete == 0;
+        if (!allFinalized) {
+            Toast.makeText(this, getString(R.string.should_finalize_form_relations), Toast.LENGTH_LONG).show();
+        }
+        return allFinalized;
+    }
+
+    // PMA-Linking CONTINUE
+    private List<Long> getExtraRelations() {
+        long[] instanceIds = listView.getCheckedItemIds();
+        List<Long> instanceIdsList = new ArrayList<>(instanceIds.length);
+        for (int i = 0; i < instanceIds.length; i++) {
+            instanceIdsList.add(instanceIds[i]);
+        }
+        List<Long> allRelatedIds = subformDeviceSummary.getAllRelatedIds(instanceIdsList);
+        List<Long> extraIds = new ArrayList<>(allRelatedIds);
+        extraIds.removeAll(instanceIdsList);
+        return allRelatedIds;
+    }
+
+    // PMA-Linking CONTINUE
+    private boolean confirmAdditionalFormRelationsSend(final List<Long> extraRelations) {
+        AlertDialog alertDialog = new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .setTitle(getString(R.string.uploading_data))
+                .setMessage(getString(R.string.unselected_relations))
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        addRelationsAndSend(extraRelations);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.cancel())
+                .create();
+        alertDialog.show();
+        return true;
+    }
+
+    // PMA-Linking CONTINUE
+    private void addRelationsAndSend(List<Long> extraRelations) {
+        for (int pos = 0; pos < listView.getCount(); pos++) {
+            long curItem = listView.getItemIdAtPosition(pos);
+            if (extraRelations.contains(curItem)) {
+                listView.setItemChecked(pos, true);
+            }
+        }
+        uploadSelectedFiles();
+        setAllToCheckedState(listView, false);
+        toggleButtonLabel(findViewById(R.id.toggle_button), listView);
+        uploadButton.setEnabled(false);
+    }
+    // PMA-Linking END
+
     void init() {
         uploadButton.setText(R.string.send_selected_data);
         instancesDao = new InstancesDao();
+        subformDeviceSummary = new SubformDeviceSummary();
 
         toggleSelsButton.setLongClickable(true);
         toggleSelsButton.setOnClickListener(v -> {

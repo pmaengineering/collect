@@ -170,6 +170,9 @@ public class InstancesDao {
     }
 
     public int getCountIncomplete(List<Long> formIds) {
+        if (formIds.size() == 0) {
+            return 0;
+        }
         String sqlIsOneOf = InstancesDao.getSqlIsOneOf(formIds);
         String selection = InstanceColumns.STATUS + " =? " + sqlIsOneOf;
         String[] selectionArgs = {Instance.STATUS_INCOMPLETE};

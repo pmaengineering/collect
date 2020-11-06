@@ -274,6 +274,14 @@ class SubformDeviceSummary() {
     val parentToChildren = allRelations.groupBy({it.first}, {it.second})
     val childToParents = allRelations.groupBy({it.second}, {it.first})
 
+    fun getAllRelatedIds(instanceIds: List<Long>): List<Long> {
+        val allChildren = instanceIds.map { parentToChildren.getOrDefault(it, listOf()) }.flatten()
+        val allParents = instanceIds.map { childToParents.getOrDefault(it, listOf()) }.flatten()
+        val allSiblings = allParents.map { parentToChildren.getOrDefault(it, listOf())}.flatten()
+        val allRelatedIds = (instanceIds + allChildren + allParents + allSiblings).distinct()
+        return allRelatedIds
+    }
+
     override fun toString(): String {
         return allRelations.map {
             StringBuilder().append(it.first).append(" -> ").append(it.second)

@@ -281,7 +281,7 @@ public class MainMenuActivity extends CollectAbstractActivity implements AdminPa
 
         setButtonsVisibility();
         invalidateOptionsMenu();
-        setUpStorageMigrationBanner();
+        // setUpStorageMigrationBanner();
     }
 
     private void setButtonsVisibility() {

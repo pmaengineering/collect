@@ -136,7 +136,7 @@ public final class GeneralKeys {
         hashMap.put(KEY_APP_THEME, Collect.getInstance().getString(R.string.app_theme_light));
         hashMap.put(KEY_APP_LANGUAGE, "");
         hashMap.put(KEY_FONT_SIZE, String.valueOf(QuestionFontSizeUtils.DEFAULT_FONT_SIZE));
-        hashMap.put(KEY_NAVIGATION, NAVIGATION_BOTH);
+        hashMap.put(KEY_NAVIGATION, NAVIGATION_BUTTONS);
         hashMap.put(KEY_SHOW_SPLASH, false);
         hashMap.put(KEY_SPLASH_PATH, Collect.getInstance().getString(R.string.default_splash_path));
         hashMap.put(KEY_MAGENTA_THEME, false);

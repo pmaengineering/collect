@@ -1008,4 +1008,9 @@
     <string name="not_a_directory">%s exists, but is not a directory</string>
 
     <string name="select_odk_shortcut">Select ODK Shortcut</string>
+
+    <string name="reset_subform_db">Relations database reset</string>
+    <string name="reset_subform_db_confirm">Resetting the relations database is irreversible. Continue?</string>
+    <string name="reset_subform_db_result">Relations database were reset</string>
+
 </resources>

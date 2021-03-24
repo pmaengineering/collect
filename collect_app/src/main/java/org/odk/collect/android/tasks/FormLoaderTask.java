@@ -197,7 +197,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
             }
         }
 
-        processItemSets(formMediaDir);
+        warningMsg = processItemSets(formMediaDir);
 
         final FormController fc = new FormController(formMediaDir, fec, instancePath == null ? null
                 : new File(instancePath));
@@ -253,9 +253,10 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
         return null;
     }
 
-    private void processItemSets(File formMediaDir) {
+    public static String processItemSets(File formMediaDir) {
         // for itemsets.csv, we only check to see if the itemset file has been
         // updated
+        String warningMsg = null;
         final File csv = new File(formMediaDir.getAbsolutePath() + "/" + ITEMSETS_CSV);
         String csvmd5 = null;
         if (csv.exists()) {
@@ -287,9 +288,10 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
             }
             ida.close();
             if (readFile) {
-                readCSV(csv, csvmd5, ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()));
+                warningMsg = readCSV(csv, csvmd5, ItemsetDbAdapter.getMd5FromString(csv.getAbsolutePath()));
             }
         }
+        return warningMsg;
     }
 
     private boolean initializeForm(FormDef formDef, FormEntryController fec) throws IOException {
@@ -522,8 +524,8 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
         this.intent = intent;
     }
 
-    private void readCSV(File csv, String formHash, String pathHash) {
-
+    private static String readCSV(File csv, String formHash, String pathHash) {
+        String warningMsg = null;
         CSVReader reader;
         ItemsetDbAdapter ida = new ItemsetDbAdapter();
         ida.open();
@@ -563,6 +565,7 @@ public class FormLoaderTask extends AsyncTask<String, String, FormLoaderTask.FEC
             }
             ida.close();
         }
+        return warningMsg;
     }
 
     public FormDef getFormDef() {

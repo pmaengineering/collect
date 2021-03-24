@@ -204,7 +204,7 @@ public class InstanceUploaderListActivity extends InstanceListActivity implement
         List<Long> allRelatedIds = subformDeviceSummary.getAllRelatedIds(instanceIdsList);
         List<Long> extraIds = new ArrayList<>(allRelatedIds);
         extraIds.removeAll(instanceIdsList);
-        return allRelatedIds;
+        return extraIds;
     }
 
     // PMA-Linking CONTINUE

@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import org.odk.collect.android.R;
 import org.odk.collect.android.analytics.Analytics;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.forms.Form;
 import org.odk.collect.android.forms.FormsRepository;
 import org.odk.collect.android.gdrive.GoogleAccountsManager;
@@ -22,6 +23,7 @@ import org.odk.collect.android.permissions.PermissionsProvider;
 import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.provider.InstanceProviderAPI;
+import org.odk.collect.android.subform.SubformDeviceSummary;
 import org.odk.collect.android.upload.InstanceServerUploader;
 import org.odk.collect.android.upload.InstanceUploader;
 import org.odk.collect.android.upload.UploadException;
@@ -32,6 +34,7 @@ import org.odk.collect.android.utilities.WebCredentialsUtils;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,9 +151,15 @@ public class InstanceSubmitter {
     @NonNull
     private List<Instance> getInstancesToAutoSend(boolean isAutoSendAppSettingEnabled) {
         List<Instance> toUpload = new ArrayList<>();
+        SubformDeviceSummary summary = new SubformDeviceSummary();
         for (Instance instance : instancesRepository.getAllFinalized()) {
             if (shouldFormBeSent(formsRepository, instance.getJrFormId(), instance.getJrVersion(), isAutoSendAppSettingEnabled)) {
-                toUpload.add(instance);
+                List<Long> idList = new ArrayList<>(Arrays.asList(instance.getId()));
+                List<Long> allRelatedIds = summary.getAllRelatedIds(idList);
+                int countIncomplete = (new InstancesDao()).getCountIncomplete(allRelatedIds);
+                if (countIncomplete == 0) {
+                    toUpload.add(instance);
+                }
             }
         }
 

@@ -118,6 +118,14 @@ public class FormsDao {
         return getFormsCursor(null, selection, selectionArgs, null);
     }
 
+    public Cursor getFormsCursorForFormIdSortedDateDesc(String formId) {
+        String selection = FormsColumns.JR_FORM_ID + "=?";
+        String[] selectionArgs = {formId};
+        String order = FormsColumns.DATE + " DESC";
+
+        return getFormsCursor(null, selection, selectionArgs, order);
+    }
+
     public String getFormTitleForFormIdAndFormVersion(String formId, String formVersion) {
         String formTitle = "";
 

@@ -5,6 +5,7 @@ import android.net.Uri
 import org.odk.collect.android.application.Collect
 import org.odk.collect.android.dao.FormsDao
 import org.odk.collect.android.dao.InstancesDao
+import org.odk.collect.android.dao.helpers.ContentResolverHelper
 import org.odk.collect.android.instances.Instance
 import org.odk.collect.android.provider.FormsProviderAPI
 import org.odk.collect.android.provider.InstanceProviderAPI
@@ -68,7 +69,7 @@ fun markStatusIncomplete(instanceUri: Uri) {
 }
 
 fun getIdFromFormId(formId: String): Long {
-    val cursor = FormsDao().getFormsCursorSortedByDateDesc(formId, null as String?)
+    val cursor = FormsDao().getFormsCursorForFormIdSortedDateDesc(formId)
     return cursor?.use {
         if (it.moveToFirst()) {
             it.getLong(it.getColumnIndex(FormsProviderAPI.FormsColumns._ID))
@@ -115,19 +116,8 @@ fun getInstanceUriFromId(id: Long): Uri {
  * the required information, this exception is thrown.
  */
 fun getInstancePath(instance: Uri): String {
-    val projection = arrayOf(InstanceProviderAPI.InstanceColumns.INSTANCE_FILE_PATH)
-    val childCursor = Collect.getInstance().contentResolver
-            .query(instance, projection, null, null, null)
-    if (null == childCursor || childCursor.count < 1) {
-        // TODO: Better exception
-        throw InstancePathNotFound()
-    }
-    // If URI is for table, not for row, potential error (only getting the first row).
-    childCursor.moveToFirst()
-    val instancePath = childCursor.getString(childCursor.getColumnIndex(
-            InstanceProviderAPI.InstanceColumns.INSTANCE_FILE_PATH))
-    childCursor.close()
-    return instancePath
+    val formInfo = ContentResolverHelper.getFormDetails(instance)
+    return formInfo.instancePath
 }
 
 fun getInstanceIdFromUri(instance: Uri, instanceFile: File?): Long {

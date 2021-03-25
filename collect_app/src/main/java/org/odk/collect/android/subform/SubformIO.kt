@@ -193,7 +193,7 @@ fun outputAndUpdateChildForms(parentId: Long, directivesByRepeatIndex: Map<Int, 
                 }
                 is SaveInstanceXPathNotFound -> {
                     Timber.w("At repeatIndex $repeatIndex, unable to save to XPath: ${ex.xpath}")
-                    subformActionResult += SubformActionResult(errorCode= SAVE_INSTANCE_XPATH_NOT_FOUND, errorData=ex.xpath)
+                    subformActionResult += SubformActionResult(errorCode=SAVE_INSTANCE_XPATH_NOT_FOUND, errorData=ex.xpath)
                 }
             }
             false

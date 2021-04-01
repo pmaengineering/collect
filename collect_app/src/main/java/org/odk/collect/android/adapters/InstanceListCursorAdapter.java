@@ -34,6 +34,7 @@ import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.subform.SubformDeviceSummary;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -166,7 +167,7 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
     }
 
     private String getMessageFormRelationsCountIncomplete(Long parentId) {
-        List<Long> relatedForms = subformDeviceSummary.getParentToChildren().get(parentId);
+        List<Long> relatedForms = new ArrayList<>(subformDeviceSummary.getParentToChildren().get(parentId));
         relatedForms.add(0, parentId);
         int countIncomplete = new InstancesDao().getCountIncomplete(relatedForms);
         int countComplete = relatedForms.size() - countIncomplete;

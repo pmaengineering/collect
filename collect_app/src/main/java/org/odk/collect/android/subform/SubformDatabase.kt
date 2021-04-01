@@ -148,6 +148,7 @@ fun getAllRelations(): Set<Pair<Long, Long>> =
             }
             close()
         }
+        close()
         allRelations
     }
 /**
@@ -484,7 +485,7 @@ fun updateRepeatSiblingInfo(parentId: Long, repeatIndex: Long) =
                     }
                 }
             }
-            cursor.close()
+            cursor?.close()
             close()
         }
 

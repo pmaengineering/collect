@@ -245,9 +245,9 @@ public class InstancesDao {
     }
 
     public Cursor getInstancesCursorForFilePath(String path) {
-        String selection = InstanceColumns.INSTANCE_FILE_PATH + "=?";
-        String[] selectionArgs = {new StoragePathProvider().getInstanceDbPath(path)};
-
+        String selection = InstanceColumns.INSTANCE_FILE_PATH + " LIKE ?";
+        String spp_path = new StoragePathProvider().getInstanceDbPath(path);
+        String[] selectionArgs = {"%" + spp_path + "%"};
         return getInstancesCursor(null, selection, selectionArgs, null);
     }
 
